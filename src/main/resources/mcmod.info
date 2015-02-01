@@ -1,0 +1,16 @@
+[
+{
+  "modid": "cosmiclib",
+  "name": "CosmicLib",
+  "description": "Shared capability of CosmicDan's mod",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "N/A",
+  "updateUrl": "",
+  "authorList": ["CosmicDan"],
+  "credits": "See description below",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

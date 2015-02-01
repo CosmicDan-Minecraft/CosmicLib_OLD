@@ -1,0 +1,9 @@
+/*
+/*/
+!/src/
+!/.gitattributes
+!/.gitignore
+!/build.gradle
+!/LICENSE.txt
+!/README.md
+!/update_forge.cmd
