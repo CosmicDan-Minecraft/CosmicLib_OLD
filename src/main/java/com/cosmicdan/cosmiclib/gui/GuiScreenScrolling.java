@@ -14,13 +14,14 @@ import net.minecraft.client.renderer.entity.RenderItem;
 import net.minecraft.item.ItemStack;
 
 /**
- * Scrollview GUIScreen. When extending this class, things work a little differently to extending a GUIScreen - many 
- * GUIScreen methods either don't need to be overridden or should not be at all. Overriding required abstracts will provide 
- * all javadoc on how to use it effectively.
+ * GuiScreen augmented with scrollview capability. When extending this class, things work a little differently to extending 
+ * a GUIScreen - many GUIScreen methods either don't need to be overridden or should not be at all. <br/><br/>
+ * 
+ * Overriding the required abstracts will provide all javadoc on how to use it effectively.
  * @author CosmicDan
  *
  */
-public abstract class Scrollview extends GuiScreen {
+public abstract class GuiScreenScrolling extends GuiScreen {
 
     // constructed (set once when created)
     final List<RowEntry> rowEntries = new ArrayList<RowEntry>();
@@ -39,7 +40,7 @@ public abstract class Scrollview extends GuiScreen {
     private int scrollY = 0;
     private int contentYsize = 0;
     
-    protected Scrollview() {
+    protected GuiScreenScrolling() {
         this.itemRender = Minecraft.getMinecraft().getRenderItem();
     }
     
