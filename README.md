@@ -1,5 +1,5 @@
-# CraftingOverhaul
-### Minecraft mod. Provides a replacement, advanced crafting interface.
+# CosmicLib
+### Minecraft mod library for common and shared functions
 
 #### License:
 * This mod is licensed under Apache License 2.0. See LICENSE.txt for details.
