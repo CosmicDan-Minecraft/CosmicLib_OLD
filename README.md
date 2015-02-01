@@ -1,5 +1,5 @@
 # CosmicLib
-### Minecraft mod library for common and shared functions
+### Minecraft mod library for general-purpose modding
 
 #### License:
 * This mod is licensed under Apache License 2.0. See LICENSE.txt for details.

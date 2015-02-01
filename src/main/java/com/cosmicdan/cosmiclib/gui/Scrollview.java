@@ -11,19 +11,12 @@ import net.minecraft.client.gui.FontRenderer;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.ScaledResolution;
 import net.minecraft.client.renderer.entity.RenderItem;
-import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.item.ItemStack;
 
 /**
- * Scrollview-powered GUIScreen. When extending this class, use is as follows:
- * <ol>
- * <li>Call <i>scrollviewInit(...)</i> from initGui();</li>
- * <li>Call <i>scrollviewDraw(...)</i> from drawScreen(...);</li>
- * <li>Use any number/combination of <i>addTextOnlyRow(...)</i>, </i>addItemIconAndTextRow(...)</i>, etc. to add your row content in a draeScreen loop. Row incrementing is automatic;</li>
- * <li>Call <i>scrollviewDone()</i> when done adding rows;</li>
- * <li>Finally, use scrollviewGetHoveredRow(...) to determine where the mouse cursor currently is.</li>
- * </ol>
- * Refer to the javadoc for individual methods for additional information.
+ * Scrollview GUIScreen. When extending this class, things work a little differently to extending a GUIScreen - many 
+ * GUIScreen methods either don't need to be overridden or should not be at all. Overriding required abstracts will provide 
+ * all javadoc on how to use it effectively.
  * @author CosmicDan
  *
  */
@@ -34,61 +27,140 @@ public abstract class Scrollview extends GuiScreen {
     final RenderItem itemRender;
     
     // initialized (set once per draw)
-    protected int contentX;
-    protected int contentY;
-    protected int contentWidth;
-    protected int contentHeight;
-    protected int rowHeight;
-    protected int startX; // each row padding start
+    private int contentX;
+    private int contentY;
+    private int contentWidth;
+    private int contentHeight;
+    private int rowHeight;
+    private int startX; // each row padding start
     
     // dynamic (set many per draw)
-    protected int rowY = 0; // current Y-offset of row to draw on
-    protected int scrollY = 0;
-    protected int contentYsize = 0;
+    private int rowY = 0; // current Y-offset of row to draw on
+    private int scrollY = 0;
+    private int contentYsize = 0;
     
-    public Scrollview() {
+    protected Scrollview() {
         this.itemRender = Minecraft.getMinecraft().getRenderItem();
     }
     
+    /*********************************
+     ********************************* 
+     *        Essential stuff
+     *********************************
+     *********************************/
+    
     /**
-     * Specify the padding of the scrollview port itself. 
-     * @return An int[] of two elements, containing the following values in this order:
-     * <ol>
-     * <li>left-padding for the entire scrollview</li>
-     * <li>top-padding for the scrollview</li>
-     * </ol>
-     * Note that this is *not* the position of the scrollview itself. Padding provides a buffer zone between visual content and mouse sensitivity; that is - the padded area will still respond to mouse hover/click actions while the actual content will be padded by these values.
+     * Specify the padding of the scrollview port. Note that this is *not* the position of the scrollview widget itself. 
+     * Padding provides a buffer zone between visual content and mouse sensitive areas; that is - the padded area will still 
+     * respond to mouse hover/click actions whereas the actual content will be padded by these values. 
+     * @return A <b>new int[2]</b> of the following values:
+     * <ul>
+     * <li>[0] = left-padding for the entire scrollview</li>
+     * <li>[1] = top-padding for <i>each row</i> of the scroll view</li>
+     * </ul>
+     * Right padding is calculated automatically depending on size, and bottom padding for each row is determined by row size. 
+     * See {@link #scrollviewAttr()}.
      */
     protected abstract int[] scrollviewPadding();
     
     
     /**
-     * Specify some attributes (dimensions and row size) of the scroll view. 
-     * @return An int[] of five elements, containing the following values in this order:
-     * <ol>
-     * <li>posX - left-side position of the scrolling viewport (before margin)</li>
-     * <li>posY - top-side position of the scrolling viewport</li>
-     * <li>width - total width of the scrolling viewport (inclusive of scroll bar)</li>
-     * <li>height - total height of the scrolling viewport</li>
-     * <li>rowHeight - the total height of each row. This should total the top padding + expected content height + desired bottom padding</li>
-     * </ol>
-     * For your convenience, this array will be forwarded to onDraw.
+     * Specify some attributes (dimensions and row size) of the scrollview port, and row size. For your convenience, this array 
+     * will be forwarded to onDraw to save recalculating dimensions for each render pass.
+     * @return A <b>new int[5]</b> of the following values:
+     * <ul>
+     * <li>[0] = posX. Left-side position of the scrolling viewport.</li>
+     * <li>[1] = posY. Top-side position of the scrolling viewport.</li>
+     * <li>[2] = width. Total width of the scrolling viewport (inclusive of scroll bar)</li>
+     * <li>[3] = height. Total height of the scrolling viewport</li>
+     * <li>[4] = rowHeight. Total Height of each row.</li>
+     * </ul>
+     * Note that the row content is additionally padded by [0], and [1] has no padding since each row has individual top padding 
+     * position as specified in {@link #scrollviewPadding()}. Finally, the rowHeight value should be greater than the row top 
+     * padding + your expected content height - the remaining number acts as row bottom-padding. 
      */
     protected abstract int[] scrollviewAttr();
     
+    /**
+     * Override this instead of initGui() - the Scrollview will call it for you at the correct time.
+     */
     protected abstract void onCreate();
     
+    /**
+     * Override this instead of drawScreen - the Scrollview will call it for you at the correct time. The final attr is passed-on from your {@link #scrollviewAttr()} implementation.
+     * @param mouseX
+     * @param mouseY
+     * @param renderPartials
+     * @param attr
+     */
     protected abstract void onDraw(int mouseX, int mouseY, float renderPartials, int[] attr);
     
+    /**
+     * Called when the Scrollview is ready to add rows. Usually you'd want to do this in a for loop or something similar.
+     * 
+     * @see #addTextOnlyRow(String, int)
+     * @see #addItemIconAndTextRow(ItemStack, String, int)
+     */
     protected abstract void onAddRows();
     
+    /**
+     * Called when a particular row is being hovered by the mouse cursor.
+     * @param index = The row that is currently being hovered.
+     */
     protected abstract void onRowHover(int index);
     
+    /**
+     * Add a plain-text row. Use this in a loop in {@link #onAddRows()}.
+     * @param text = String to display in this row;
+     * @param color = Color of this text, in the standard hex notation (i.e. 0xRRGGBB)
+     */
+    public void addTextOnlyRow(String text, int color) {
+        fontRendererObj.drawString(text, startX, contentY * 2 + rowY + scrollY + scrollviewPadding()[1], color); // multiply by 2 because we're scaled by half
+        incRow();
+    }
+    
+    /**
+     * Add a plain-text row. Use this in a loop in {@link #onAddRows()}.
+     * @param item = An ItemStack of the desired item to appear before the text;
+     * @param text = String to display after the Item icon;
+     * @param color = Color of this text, in the standard hex notation (i.e. 0xRRGGBB)
+     */
+    public void addItemIconAndTextRow(ItemStack item, String text, int color) {
+        itemRender.renderItemIntoGUI(item, startX, contentY * 2 + rowY + scrollY);
+        GL11.glDisable(GL11.GL_LIGHTING);
+        fontRendererObj.drawString(text, startX + 20, contentY * 2 + rowY + scrollY + scrollviewPadding()[1], color); // multiply by 2 because we're scaled by half
+        incRow();
+    }
+    
+    /*********************************
+     ********************************* 
+     *      Semi-internal stuff
+     *********************************
+     *********************************/
+    
+    /**
+     * Handle mouse scroll events. 
+     * I've kept this public in-case you want to override it with special behavior. Be sure to call super though!
+     */
+    @Override
+    public void handleMouseInput() {
+        int delta = Mouse.getEventDWheel(); 
+        if (delta > 0) { // scroll up, increase vertical padding
+            if (scrollY < 0)
+                scrollY += 20;
+        } else if (delta < 0) { // scroll down, decrease vertical padding
+            if (scrollY > (contentHeight * 2) - contentYsize)
+                scrollY -= 20;
+        }
+    }
+    
+    /** If you must override this, be sure to replicate the Scrollview logic appropriately! */
     @Override
     public void initGui() {
         onCreate();
     }
     
+    /** If you must override this, be sure to replicate the Scrollview logic appropriately! */
     @Override
     public void drawScreen(int mouseX, int mouseY, float renderPartials) {
         int[] attr = scrollviewAttr();
@@ -101,12 +173,14 @@ public abstract class Scrollview extends GuiScreen {
             onRowHover(hoverIndex);
     }
     
-    /**
-     * Start drawing the ScrollView. Should be called as the very last GUI element in drawScreen. 
-     * 
-     * Don't forget to call done() after all rows are added!
-     */
-    public void scrollviewDraw(int contentX, int contentY, int contentWidth, int contentHeight, int rowHeight, FontRenderer fontRendererObj) {
+    /*********************************
+     ********************************* 
+     *      Very-internal stuff
+     *********************************
+     *********************************/
+    
+    /** Start drawing the ScrollView. Should be called after onDraw but before all other Scrollview drawing. */
+    private void scrollviewDraw(int contentX, int contentY, int contentWidth, int contentHeight, int rowHeight, FontRenderer fontRendererObj) {
         this.contentX = contentX;
         this.contentY = contentY;
         this.contentWidth = contentWidth;
@@ -125,28 +199,15 @@ public abstract class Scrollview extends GuiScreen {
         rowEntries.clear();
     }
 
-    public void scrollviewDone() {
+    /** Finalise the scrollview drawing */
+    private void scrollviewDone() {
         GL11.glPopMatrix();
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
         // also reset the runtime vars
         rowY = 0;
     }
     
-    public void addTextOnlyRow(String text, int color) {
-        fontRendererObj.drawString(text, startX, contentY * 2 + rowY + scrollY + scrollviewPadding()[1], color); // multiply by 2 because we're scaled by half
-        incRow();
-    }
-    
-    /**
-     * Draw an item + text row
-     */
-    public void addItemIconAndTextRow(ItemStack item, String text, int color) {
-        itemRender.renderItemIntoGUI(item, startX, contentY * 2 + rowY + scrollY);
-        GL11.glDisable(GL11.GL_LIGHTING);
-        fontRendererObj.drawString(text, startX + 20, contentY * 2 + rowY + scrollY + scrollviewPadding()[1], color); // multiply by 2 because we're scaled by half
-        incRow();
-    }
-    
+    /** Increment some values so the widget is properly aligned for next run */ 
     private void incRow() {
         rowY += rowHeight;
         contentYsize += rowHeight;
@@ -154,22 +215,12 @@ public abstract class Scrollview extends GuiScreen {
     }
     
     /**
-     * Handle mouse scroll events. 
-     * I've kpt this public in-case you want to override it with special behavior.
+     * 
+     * @param mouseX = mouseX, as gotten from GUIScreen
+     * @param mouseY = mouseY, as gotten from GUIScreen's 
+     * @return
      */
-    @Override
-    public void handleMouseInput() {
-        int delta = Mouse.getEventDWheel(); 
-        if (delta > 0) { // scroll up, increase vertical padding
-            if (scrollY < 0)
-                scrollY += 20;
-        } else if (delta < 0) { // scroll down, decrease vertical padding
-            if (scrollY > (contentHeight * 2) - contentYsize)
-                scrollY -= 20;
-        }
-    }
-    
-    public int scrollviewGetHoveredRow(int mouseX, int mouseY) {
+    private int scrollviewGetHoveredRow(int mouseX, int mouseY) {
         if ((mouseX < contentX) || (mouseX > contentX + contentWidth))
             return -1;
         if ((mouseY < contentY) || (mouseY > contentY + contentHeight))
